@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <title>
+    Online Forum
+  </title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</head>
+<body>
+
+
+{% include 'includes/_navbar.html' %}
+{% include 'includes/_messages.html' %}
+{% block body %} <!--#this is content placeholder for other pages--> {% endblock %}
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"> </script>
+<script src="//cdn.ckeditor.com/4.7.3/standard/ckeditor.js"></script>
+<script type="text/javascript">
+
+   CKEDITOR.replace('editor')
+</script>
+</body>
+</html>
