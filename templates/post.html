@@ -1,0 +1,36 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+ <span><h1>{{post.title}} </h1> </span> 
+{% from 'includes/_formhelpers.html' import render_field %}
+<form method="POST" action=''>
+	<button type="submit" class="btn btn-success pull-right" value="upvote" >
+Upvote  <i class="fa fa-thumbs-o-up" ></i> 
+</button>
+	<!--<input type="submit" class="btn btn-info" value='Upvote' />-->
+</form> 
+ 
+ <!-- using ajax -->
+  
+
+<small> Written by {{post.author}} on {{post.date}} </small>
+<hr>
+  <div> {{post.body | safe}}</div>
+<hr>
+ {% for comment in comments %}
+<div class="container">
+  <div class="panel panel-default">
+    <div class="panel-heading"><small> Comment by {{comment.author}} on {{comment.date}} </small></div>
+    <div class="panel-body">{{comment.body | safe}}</div>
+  </div>
+</div>
+<!-- comment form -->
+   {% endfor %}
+ <form method="POST" action="">
+ <div class='form-group'>
+     {{ render_field(form.comment_body,class_='form-control',id="editor")}}
+   </div>
+
+<p> <input type="submit" class="btn btn-primary" value='Submit' /> </p>
+ </form>
+{% endblock %}
