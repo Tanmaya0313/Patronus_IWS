@@ -17,7 +17,6 @@ app.config['MYSQL_CURSORCLASS']='DictCursor'
 #init MYSQL_DB
 mysql=MySQL(app)
 
-
 #Articles= Articles() #pulling articles out from the file data.py and not the database so commenting it out
 
 """The route() decorator in Flask is used to bind URL to a function
@@ -50,17 +49,47 @@ def postlist():
         return render_template('postlist.html',msg=msg)
     return render_template('postlist.html')
     return render_template('postlist.html',post=post)
+    
+    
+#Comments Form Class
+class CommentForm(Form):
+    comment_body=TextAreaField('Comment',[validators.Length(min=10)])
 
-#single article
-@app.route('/post/<string:id>/')
+#single post
+@app.route('/post/<string:id>/',methods=['GET', 'POST'])
 def post(id):
-    #Create cursor
+    form=CommentForm(request.form)
     cur=mysql.connection.cursor()
+    #Insert comment in db
+    if request.method=='POST' and form.validate():
+        body=form.comment_body.data
+        
+        #Create cursor
+        cur=mysql.connection.cursor()
+        #Execute
+        cur.execute("INSERT INTO Comments(post_id,body,author) VALUES(%s,%s,%s)",(id,body,session['username']))
+        #Commit to DB
+        mysql.connection.commit()
+        #Close connection
+        #cur.close()
+   # elif request.method=='POST':
+
+    
+
+    #end
+
+    
 
     #Get article
+    
     result=cur.execute('SELECT * from Posts WHERE id= %s',[id])
     post=cur.fetchone()
-    return render_template('post.html',post=post)
+    res1= cur.execute('SELECT * from Comments where post_id=%s',[id])
+    commentList=cur.fetchall();
+
+    return render_template('post.html',post=post,form=form,comments=commentList)
+    
+   
 @app.route('/contact') #this is like controller in MVC
 def contact():
     return render_template('contact.html')
@@ -76,7 +105,7 @@ class RegisterForm(Form):
      validators.EqualTo('confirm',message='Passwords do not match')
     ])
     confirm=PasswordField('Confirm Password')
-    interest=StringField('Interest',[validators.Length(min=6,max=50)])
+    interest=StringField('Interest',[validators.Length(min=2,max=50)])
 
 #Login Form class
 '''class LoginForm(Form):
@@ -174,89 +203,92 @@ def dashboard():
 
     #Get articles
     #result=cur.execute('SELECT * from Articles WHERE author=%s',[session['username']])
-    result=cur.execute('SELECT * from Articles')
-    articles=cur.fetchall()
+    result=cur.execute('SELECT * from Posts WHERE author=%s',[session['username']])
+    posts=cur.fetchall()
     if result>0:
-        return render_template('dashboard.html',articles=articles)
+        return render_template('dashboard.html',posts=posts)
     else:
-        msg="No Articles Found"
+        msg="No Posts Found"
         return render_template('dashboard.html',msg=msg)
     return render_template('dashboard.html')
 #Article form class
-class ArticleForm(Form):
+class PostForm(Form):
     title= StringField('Title', [validators.Length(min=1,max=200)])
     body=TextAreaField('Body',[validators.Length(min=30)])
+    category=StringField('Category', [validators.Length(min=2,max=50)])
 
 #Add article
-@app.route('/add_article',methods=['GET','POST'])
+@app.route('/add_post',methods=['GET','POST'])
 @is_logged_in
-def add_article():
-    form=ArticleForm(request.form)
+def add_post():
+   
+    form=PostForm(request.form)
     if request.method=='POST' and form.validate():
         title=form.title.data
         body=form.body.data
+        category=form.category.data;
 
         #Create cursor
         cur=mysql.connection.cursor()
         #Execute
-        cur.execute("INSERT INTO Articles(title,body,author) VALUES(%s,%s,%s)",(title,body,session['username']))
+        cur.execute("INSERT INTO Posts(author,title,body,upvote,category) VALUES(%s,%s,%s,%s,%s)",(session['username'],title,body,0,category))
         #Commit to DB
         mysql.connection.commit()
         #Close connection
         cur.close()
 
-        flash('Article created','success')
+        flash('Discussion Thread created','success')
         return redirect(url_for('dashboard'))
     return render_template('add_post.html',form=form)
 
 #edit Article
 
-@app.route('/edit_article/<string:id>',methods=['GET','POST'])
+@app.route('/edit_post/<string:id>',methods=['GET','POST'])
 @is_logged_in
-def edit_article(id):
-    cur=mysql.connection.cursor();
+def edit_post(id):
+    cur=mysql.connection.cursor()
     #Get the article by id
-    result=cur.execute("SELECT * from Articles where id=%s",[id])
-    article=cur.fetchone()
+    result=cur.execute("SELECT * from Posts where id=%s",[id])
+    post=cur.fetchone()
 
     #Get form
-    form=ArticleForm(request.form)
+    form=PostForm(request.form)
 
     #Populate article from fields
-    form.title.data=article['title']
-    form.body.data=article['body']
+    form.title.data=post['title']
+    form.body.data=post['body']
 
 
-    if request.method=='POST' and form.validate():
+    if request.method=='POST' :
         title=request.form['title']
         body=request.form['body']
 
         #Create cursor
         cur=mysql.connection.cursor()
         #Execute
-        cur.execute("UPDATE Articles SET title=%s,body=%s WHERE id=%s",(title,body,id))
+        cur.execute("UPDATE Posts SET title=%s,body=%s WHERE id=%s",(title,body,id))
         #Commit to DB
         mysql.connection.commit()
         #Close connection
         cur.close()
 
-        flash('Article Updated','success')
+        flash('Post Updated','success')
         return redirect(url_for('dashboard'))
     return render_template('edit_post.html',form=form)
 
 #delete article
-@app.route('/delete_article/<string:id>',methods=['POST'])
+@app.route('/delete_post/<string:id>',methods=['POST'])
 @is_logged_in
-def delete_article(id):
+def delete_post(id):
     #Create cursor
      cur=mysql.connection.cursor()
      #Execute
-     cur.execute('DELETE from Articles WHERE id=%s',[id])
+     cur.execute('DELETE from Posts WHERE id=%s',[id])
      #commit to db
      mysql.connection.commit()
      #Close connection
      cur.close()
-     flash('Article Deleted','success')
+     flash('Post Deleted','success')
      return redirect(url_for('dashboard'))
 
 if __name__=='__main__':  #this means the script which is gonna be executed
