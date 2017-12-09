@@ -40,7 +40,7 @@ def postlist():
     cur=mysql.connection.cursor()
 
     #Get articles
-    result=cur.execute('SELECT * from Posts')
+    result=cur.execute('SELECT * from Posts ORDER BY upvote DESC')
     post=cur.fetchall()
     if result>0:
         return render_template('postlist.html',post=post)
@@ -61,6 +61,12 @@ def post(id):
     form=CommentForm(request.form)
     cur=mysql.connection.cursor()
     #Insert comment in db
+     #Create cursor
+    cur=mysql.connection.cursor()
+    #Get upvote value
+    result=cur.execute('SELECT upvote from Posts WHERE id= %s',[id])
+    data=cur.fetchone();
+    upvote=data["upvote"]
     if request.method=='POST' and form.validate():
         body=form.comment_body.data
         
@@ -72,7 +78,17 @@ def post(id):
         mysql.connection.commit()
         #Close connection
         #cur.close()
-   # elif request.method=='POST':
+    elif request.method=='POST':
+        
+       
+        upvote=upvote+1;
+        result=cur.execute('UPDATE Posts SET upvote=%s WHERE id= %s',(upvote,id))
+       
+        mysql.connection.commit()
+
+        #Close connection
+        
+         
 
     
 
@@ -86,9 +102,29 @@ def post(id):
     post=cur.fetchone()
     res1= cur.execute('SELECT * from Comments where post_id=%s',[id])
     commentList=cur.fetchall();
-
-    return render_template('post.html',post=post,form=form,comments=commentList)
+    cur.close();
+    return render_template('post.html',post=post,form=form,comments=commentList,upvote=upvote)
     
+#user recommendations
+@app.route('/recommendation',methods=['GET', 'POST'])
+def recommendation():
+     #Create cursor
+    cur=mysql.connection.cursor()
+
+    #Get articles
+    result=cur.execute('SELECT interest from User where username=%s',[session['username']])
+    post=cur.fetchone();
+    interest=post['interest']
+    result1= cur.execute('SELECT *  from Posts where category=%s ORDER BY upvote DESC',[interest])
+    post1=cur.fetchall();
+
+    if result1>=1:
+        return render_template('recommendation.html',post=post1)
+    else:
+        msg="No recommendations Found"
+        return render_template('recommendation.html',msg=msg)
+    return render_template('recommendation.html')
+  
    
 @app.route('/contact') #this is like controller in MVC
 def contact():
